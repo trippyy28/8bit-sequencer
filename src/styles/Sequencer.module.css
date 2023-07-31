@@ -11,6 +11,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 50px;
+}
+.channelNum {
   margin-bottom: 20px;
 }
 
@@ -18,18 +21,21 @@
   display: flex;
   align-items: center;
   width: 100%;
+  z-index: 10;
 }
 
 .noteLabel {
-  margin-right: 10px;
+  position: absolute;
+  left: 130px;
   font-size: 16px;
+  z-index: 9;
 }
 
 .grid {
   display: flex;
   border: 1px solid rgb(19, 18, 18);
   overflow-x: auto;
-  flex: 1;
+  z-index: 8;
 }
 
 .step {
@@ -43,4 +49,14 @@
 .activeStep {
   background-color: rgb(226, 62, 62);
   opacity: 100%;
+}
+
+.title {
+  margin-bottom: 40px;
+}
+
+.currentStep {
+  background-color: rgb(49, 248, 255);
+  opacity: 70%;
+  z-index: 12;
 }
