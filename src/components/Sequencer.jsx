@@ -27,12 +27,24 @@ function Sequencer() {
     "D4",
     "C#4",
     "C4",
+    "B3",
+    "A#3",
+    "A3",
+    "G#3",
+    "G3",
+    "F#3",
+    "F3",
+    "E3",
+    "D#3",
+    "D3",
+    "C#3",
+    "C3",
   ];
   const numChannels = 2;
   const [synths, setSynths] = useState([]);
-
   const [waveforms, setWaveforms] = useState(defaultWaveforms);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [tempo, setTempo] = useState(120);
   const synthsRef = useRef(null);
   const sequencesRef = useRef(null);
   const [sequences, setSequences] = useState(
@@ -42,9 +54,10 @@ function Sequencer() {
         Array(32)
           .fill()
           .map(() => Array(8).fill(false))
-      )
+      ) 
   );
   const [currentStep, setCurrentStep] = useState(0);
+  console.log(currentStep)
   const createSynths = () => {
     synths.forEach((synth) => synth.dispose());
 
@@ -78,16 +91,20 @@ function Sequencer() {
     setSequences(newSequences);
     sequencesRef.current = newSequences;
     if (newSequences[channel][step][noteIndex]) {
-      playNote(noteNames[noteIndex]);
+      playNote(noteNames[noteIndex], channel);
     }
   };
 
-  const playNote = (note) => {
-    synthsRef.current.forEach((synth) =>
-      synth.triggerAttackRelease(note, "8n")
-    );
+  const playNote = (note, channel) => {
+    const synth = synthsRef.current[channel];
+    if (waveforms[channel] === 'noise') {
+      // Handle noise synthesis
+      synth.triggerAttackRelease('8n');
+    } else {
+      // Handle other waveforms
+      synth.triggerAttackRelease(note, '8n');
+    }
   };
-
   const togglePlayPause = () => {
     if (isPlaying) {
       Tone.Transport.stop();
@@ -104,31 +121,29 @@ function Sequencer() {
     setWaveforms(newWaveforms);
     createSynths();
   };
+  const changeTempo = (newTempo) => {
+    setTempo(newTempo);
+    Tone.Transport.bpm.value = newTempo;
+  };
 
   useEffect(() => {
     createSynths();
+    Tone.Transport.bpm.value = tempo;
   }, [waveforms]);
 
   useEffect(() => {
-    const loop = new Tone.Loop((time) => {
-      setCurrentStep(
-        Tone.Transport.getTicksAtTime(time) % sequencesRef.current[0].length
-      );
+    const loop = new Tone.Sequence((time, step) => {
+      setCurrentStep(step);
+   
       sequencesRef.current.forEach((channelNotes, channel) => {
-        channelNotes.forEach((stepNotes, step) => {
-          stepNotes.forEach((isActive, noteIndex) => {
-            if (isActive && step === currentStep) {
-              synthsRef.current[channel].triggerAttackRelease(
-                noteNames[noteIndex],
-                "8n",
-                time
-              );
-            }
-          });
+        channelNotes[step].forEach((isActive, noteIndex) => {
+          if (isActive) {
+            playNote(noteNames[noteIndex], channel);
+          }
         });
       });
-    }, "16n");
-
+    }, Array.from({ length: 32 }, (_, i) => i), "16n");
+  
     if (isPlaying) {
       loop.start(0);
       Tone.Transport.start();
@@ -136,15 +151,29 @@ function Sequencer() {
       loop.stop(0);
       Tone.Transport.stop();
     }
-
+  
     return () => {
       loop.dispose();
+     
     };
-  }, [currentStep, isPlaying, noteNames]);
-
+  }, [isPlaying, noteNames]);
+  
+  
+ 
   return (
     <div className={styles.main}>
       <h1 className={styles.title}>Simple 8-bit Music Player</h1>
+      <div className={styles.tempoControl}>
+  <label>Tempo: </label>
+  <input 
+    type="number" 
+    value={tempo} 
+    onChange={(e) => changeTempo(e.target.value)}
+  />
+  <span>BPM</span>
+</div>
+
+
 
       {isPlaying ? (
         <FontAwesomeIcon
