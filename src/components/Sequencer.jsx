@@ -45,8 +45,10 @@ function Sequencer() {
   const [waveforms, setWaveforms] = useState(defaultWaveforms);
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setTempo] = useState(120);
+  const [globalVolume, setGlobalVolume] = useState(-12);
   const synthsRef = useRef(null);
   const sequencesRef = useRef(null);
+
   const [sequences, setSequences] = useState(
     Array(numChannels)
       .fill()
@@ -54,29 +56,37 @@ function Sequencer() {
         Array(32)
           .fill()
           .map(() => Array(8).fill(false))
-      ) 
+      )
   );
   const [currentStep, setCurrentStep] = useState(0);
-  console.log(currentStep)
+
+  //click
+  const globalVolumeRef = useRef(new Tone.Volume(globalVolume).toDestination());
+
+  const handleGlobalVolumeChange = (value) => {
+    setGlobalVolume(value);
+  };
+
   const createSynths = () => {
     synths.forEach((synth) => synth.dispose());
 
     const newSynths = waveforms.map((waveform) => {
-      if (waveform !== "noise") {
-        return new Tone.Synth({
-          oscillator: {
-            type: waveform,
-          },
-          envelope: {
-            attack: 0.05,
-            decay: 0.2,
-            sustain: 0.2,
-            release: 1,
-          },
-        }).toDestination();
-      } else {
-        return new Tone.NoiseSynth().toDestination();
-      }
+      const synth =
+        waveform !== "noise"
+          ? new Tone.Synth({
+              oscillator: {
+                type: waveform,
+              },
+              envelope: {
+                attack: 0.05,
+                decay: 0.2,
+                sustain: 0.2,
+                release: 1,
+              },
+            })
+          : new Tone.NoiseSynth();
+
+      return synth.connect(globalVolumeRef.current);
     });
 
     setSynths(newSynths);
@@ -97,12 +107,12 @@ function Sequencer() {
 
   const playNote = (note, channel) => {
     const synth = synthsRef.current[channel];
-    if (waveforms[channel] === 'noise') {
+    if (waveforms[channel] === "noise") {
       // Handle noise synthesis
-      synth.triggerAttackRelease('8n');
+      synth.triggerAttackRelease("8n");
     } else {
       // Handle other waveforms
-      synth.triggerAttackRelease(note, '8n');
+      synth.triggerAttackRelease(note, "8n");
     }
   };
   const togglePlayPause = () => {
@@ -130,20 +140,26 @@ function Sequencer() {
     createSynths();
     Tone.Transport.bpm.value = tempo;
   }, [waveforms]);
+  useEffect(() => {
+    globalVolumeRef.current.volume.value = globalVolume;
+  }, [globalVolume]);
 
   useEffect(() => {
-    const loop = new Tone.Sequence((time, step) => {
-      setCurrentStep(step);
-   
-      sequencesRef.current.forEach((channelNotes, channel) => {
-        channelNotes[step].forEach((isActive, noteIndex) => {
-          if (isActive) {
-            playNote(noteNames[noteIndex], channel);
-          }
+    const loop = new Tone.Sequence(
+      (time, step) => {
+        setCurrentStep(step);
+        sequencesRef.current.forEach((channelNotes, channel) => {
+          channelNotes[step].forEach((isActive, noteIndex) => {
+            if (isActive) {
+              playNote(noteNames[noteIndex], channel);
+            }
+          });
         });
-      });
-    }, Array.from({ length: 32 }, (_, i) => i), "16n");
-  
+      },
+      Array.from({ length: 32 }, (_, i) => i),
+      "16n"
+    );
+
     if (isPlaying) {
       loop.start(0);
       Tone.Transport.start();
@@ -151,29 +167,32 @@ function Sequencer() {
       loop.stop(0);
       Tone.Transport.stop();
     }
-  
+
     return () => {
       loop.dispose();
-     
     };
-  }, [isPlaying, noteNames]);
-  
-  
- 
+  }, [isPlaying, noteNames, globalVolume]);
+
   return (
     <div className={styles.main}>
       <h1 className={styles.title}>Simple 8-bit Music Player</h1>
       <div className={styles.tempoControl}>
-  <label>Tempo: </label>
-  <input 
-    type="number" 
-    value={tempo} 
-    onChange={(e) => changeTempo(e.target.value)}
-  />
-  <span>BPM</span>
-</div>
-
-
+        <label>Tempo: </label>
+        <input
+          type="number"
+          value={tempo}
+          onChange={(e) => changeTempo(e.target.value)}
+        />
+        <span>BPM</span>
+      </div>
+      <input
+        type="range"
+        min="-48"
+        max="0"
+        step="1"
+        value={globalVolume}
+        onChange={(e) => handleGlobalVolumeChange(e.target.value)}
+      />
 
       {isPlaying ? (
         <FontAwesomeIcon

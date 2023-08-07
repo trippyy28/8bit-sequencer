@@ -9,3 +9,12 @@
   font-family: "VT323", monospace;
   margin-bottom: 20px;
 }
+
+.pixelPlayer {
+  color: rgb(50, 185, 230);
+  transition: 0.5s;
+}
+
+.pixelPlayer:hover {
+  color: white;
+}

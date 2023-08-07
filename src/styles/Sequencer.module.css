@@ -27,6 +27,7 @@
   position: absolute;
   left: 130px;
   font-size: 16px;
+  
 }
 
 .grid {
@@ -57,4 +58,10 @@
   background-color: rgb(49, 248, 255);
   opacity: 70%;
   z-index: 12;
+}
+
+@media screen and (min-width: 1300px) {
+  .noteLabel{
+    left: 452px;
+  }
 }

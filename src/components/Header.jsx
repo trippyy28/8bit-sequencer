@@ -3,9 +3,9 @@ import styles from "../styles/Header.module.css";
 function Header() {
   return (
     <div className={styles.header}>
-      <h2>Hi</h2>
-      <h2>PixelPlayer</h2>
-      <h2>Donate</h2>
+      <h3>About</h3>
+      <h2 className={styles.pixelPlayer}>PixelPlayer</h2>
+      <h3>Donate</h3>
     </div>
   );
 }
